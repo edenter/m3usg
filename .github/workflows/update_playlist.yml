@@ -1,0 +1,56 @@
+name: Update M3U Playlist
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # Runs on a schedule (every day at midnight UTC)
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  update-playlist:
+    runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # updated M3U file.
+      contents: write
+
+    steps:
+      # 1. Checks out your repository so the workflow can access it
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # 2. Sets up a Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. Installs the script's dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      # 4. Runs your Python script
+      - name: Run script to update M3U
+        env:
+          M3U_URL: ${{ vars.M3U_URL }}
+        run: python main.py
+
+      # 5. Get the current date to use in the tag name
+      - name: Get current date
+        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      # 6. Create a new release and upload the playlist as an asset
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          # The name of the tag to create. Using the date ensures it's unique.
+          tag_name: playlist-${{ github.run_number }}-${{ env.TODAY }}
+          # The files to upload as release assets.
+          files: updated_playlist.m3u
+          # This marks the release as the "latest" release.
+          make_latest: true
