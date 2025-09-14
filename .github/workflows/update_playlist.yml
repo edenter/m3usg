@@ -68,13 +68,19 @@ jobs:
             echo "previous_file_hash=$OLD_HASH" >> $GITHUB_OUTPUT
           fi
 
-      # 6. Create a new release and upload the playlist as an asset
+      # 6. Get current date for tag
+      - name: Get current date
+        if: steps.check_changes.outputs.has_changed == 'true'
+        id: date
+        run: echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      # 7. Create a new release and upload the playlist as an asset
       - name: Create Release and Upload Asset
         if: steps.check_changes.outputs.has_changed == 'true'
         uses: softprops/action-gh-release@v2
         with:
           # The name of the tag to create. Using the date ensures it's unique.
-          tag_name: playlist-${{ github.run_number }}-${{ format('{0:YYYY-MM-DD}', github.event.schedule || '1970-01-01') }}
+          tag_name: playlist-${{ github.run_number }}-${{ steps.date.outputs.today }}
           # The files to upload as release assets.
           files: updated_playlist.m3u
           # This marks the release as the "latest" release.
