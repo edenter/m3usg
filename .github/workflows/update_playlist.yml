@@ -53,9 +53,9 @@ jobs:
 
           # Get the body of the latest release and extract the old hash.
           # The body is expected to contain a line like: **Playlist Hash (SHA256):** `the_hash`
-          # We suppress errors in case no release exists yet.
+          # We suppress errors in case no release exists yet and get the hash from the "New Playlist Hash" line.
           LATEST_RELEASE_BODY=$(gh release view --json body --jq .body 2>/dev/null || echo "")
-          OLD_HASH=$(echo "$LATEST_RELEASE_BODY" | grep "Playlist Hash" | awk '{print $NF}' | tr -d '`')
+          OLD_HASH=$(echo "$LATEST_RELEASE_BODY" | grep -A 1 "New Playlist Hash" | tail -n 1 | tr -d '`\r\n')
           echo "Old hash: $OLD_HASH"
 
           if [ "$NEW_HASH" = "$OLD_HASH" ]; then
