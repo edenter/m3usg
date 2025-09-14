@@ -80,7 +80,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           # The name of the tag to create. Using the date ensures it's unique.
-          tag_name: playlist-${{ github.run_number }}-${{ steps.date.outputs.today }}
+          tag_name: playlist-${{ steps.date.outputs.today }}
           # The files to upload as release assets.
           files: updated_playlist.m3u
           # This marks the release as the "latest" release.
