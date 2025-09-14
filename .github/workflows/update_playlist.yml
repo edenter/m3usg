@@ -40,17 +40,49 @@ jobs:
           M3U_URL: ${{ vars.M3U_URL }}
         run: python main.py
 
-      # 5. Get the current date to use in the tag name
-      - name: Get current date
-        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+      # 5. Check for changes using hash from latest release description
+      - name: Check for changes
+        id: check_changes
+        env:
+          # The GITHUB_TOKEN is required for the GitHub CLI to interact with your repo
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Calculate hash of the new playlist
+          NEW_HASH=$(sha256sum updated_playlist.m3u | awk '{print $1}')
+          echo "New hash: $NEW_HASH"
+
+          # Get the body of the latest release and extract the old hash.
+          # The body is expected to contain a line like: **Playlist Hash (SHA256):** `the_hash`
+          # We suppress errors in case no release exists yet.
+          LATEST_RELEASE_BODY=$(gh release view --json body --jq .body 2>/dev/null || echo "")
+          OLD_HASH=$(echo "$LATEST_RELEASE_BODY" | grep "Playlist Hash" | awk '{print $NF}' | tr -d '`')
+          echo "Old hash: $OLD_HASH"
+
+          if [ "$NEW_HASH" = "$OLD_HASH" ]; then
+            echo "No changes detected. Skipping release."
+            echo "has_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Playlist has changed. Preparing for new release."
+            echo "has_changed=true" >> $GITHUB_OUTPUT
+            echo "file_hash=$NEW_HASH" >> $GITHUB_OUTPUT
+            echo "previous_file_hash=$OLD_HASH" >> $GITHUB_OUTPUT
+          fi
 
       # 6. Create a new release and upload the playlist as an asset
       - name: Create Release and Upload Asset
+        if: steps.check_changes.outputs.has_changed == 'true'
         uses: softprops/action-gh-release@v2
         with:
           # The name of the tag to create. Using the date ensures it's unique.
-          tag_name: playlist-${{ github.run_number }}-${{ env.TODAY }}
+          tag_name: playlist-${{ github.run_number }}-${{ format('{0:YYYY-MM-DD}', github.event.schedule || '1970-01-01') }}
           # The files to upload as release assets.
           files: updated_playlist.m3u
           # This marks the release as the "latest" release.
           make_latest: true
+          # Add the hash to the release notes for easy viewing.
+          body: |
+            **New Playlist Hash (SHA256):**
+            `${{ steps.check_changes.outputs.file_hash }}`
+
+            **Previous Playlist Hash (SHA256):**
+            `${{ steps.check_changes.outputs.previous_file_hash }}`
