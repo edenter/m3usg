@@ -170,24 +170,23 @@ def update_m3u(input_url, output_file, tvg_id_map, group_title_map):
 
     for i, line in enumerate(lines):
         if line.startswith('#EXTINF:-1'):
-            # Check for a matching channel name from our map
+            updated_line = line
+            # First, attempt to update the tvg-id
             for channel_name, new_tvg_id in tvg_id_map.items():
-                if re.search(r',' + re.escape(channel_name) + r'(?=\s|$)', line, re.IGNORECASE):
+                if re.search(r',' + re.escape(channel_name) + r'(?=\s|$)', updated_line, re.IGNORECASE):
                     # Use a regular expression to find and replace the tvg-id
                     # The pattern looks for tvg-id=" followed by any characters until the next quote
-                    updated_line = re.sub(r'tvg-id=".*?"', f'tvg-id="{new_tvg_id}"', line)
-
-                    # More efficiently replace group-title
-                    group_title_match = re.search(r'group-title="(.*?)"', updated_line)
-                    if group_title_match:
-                        old_group = group_title_match.group(1)
-                        if old_group in group_title_map:
-                            new_group = group_title_map[old_group]
-                            updated_line = updated_line.replace(f'group-title="{old_group}"', f'group-title="{new_group}"')
-                    updated_lines.append(updated_line)
+                    updated_line = re.sub(r'tvg-id=".*?"', f'tvg-id="{new_tvg_id}"', updated_line)
                     break
-            else:
-                updated_lines.append(line)
+            
+            # Second, always attempt to replace the group-title
+            group_title_match = re.search(r'group-title="(.*?)"', updated_line)
+            if group_title_match:
+                old_group = group_title_match.group(1)
+                if old_group in group_title_map:
+                    new_group = group_title_map[old_group]
+                    updated_line = updated_line.replace(f'group-title="{old_group}"', f'group-title="{new_group}"')
+            updated_lines.append(updated_line)
         else:
             updated_lines.append(line)
     
