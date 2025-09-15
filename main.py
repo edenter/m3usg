@@ -132,8 +132,8 @@ tvg_id_map = {
 }
 
 group_title_map = {
-    "教育": "Education & lifestyle",
-    "国际民族": "International/ethnic",
+    "教育": "Education & Lifestyle",
+    "国际民族": "International/Ethnic",
     "娱乐": "Entertainment",
     "中文亚洲": "Chinese/Asian",
     "新闻": "News",
